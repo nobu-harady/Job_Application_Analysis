@@ -1,2 +1,2 @@
-# Job_Application_Analysis
+# 応募効果分析
 Application Effect Analysis
