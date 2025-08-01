@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>顧客管理システム</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 2em; background-color: #f8f9fa; color: #343a40; }
+        h1, h2 { color: #0056b3; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 2em; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; }
+        th { background-color: #007bff; color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        form { margin-top: 2em; padding: 2em; border: 1px solid #ccc; border-radius: 8px; background-color: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 1em; }
+        label { display: block; margin-bottom: 0.5em; font-weight: bold; }
+        input[type="text"], input[type="number"], select { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ced4da; border-radius: 4px; }
+        button { padding: 12px 20px; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        .btn-primary { background-color: #007bff; }
+        .btn-primary:hover { background-color: #0069d9; }
+        .btn-success { background-color: #28a745; }
+        .btn-success:hover { background-color: #218838; }
+        .btn-warning { background-color: #ffc107; color: black; }
+        .btn-warning:hover { background-color: #e0a800; }
+        .btn-danger { background-color: #dc3545; }
+        .btn-danger:hover { background-color: #c82333; }
+        .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1em; }
+        .search-form { display: flex; gap: 10px; align-items: center; }
+        .delete-form {
+            /* フォーム自体をレイアウトから"消し"、中のボタンを直接の要素のように扱います。これにより不要な余白がなくなります。 */
+            display: contents;
+        }
+        .averages-container {
+            background-color: #e9ecef;
+            padding: 1em 1.5em;
+            margin-bottom: 2em;
+            border-radius: 8px;
+        }
+        .averages-container h3 {
+            margin-top: 0;
+            margin-bottom: 1em;
+            color: #0056b3;
+            border-bottom: 1px solid #ced4da;
+            padding-bottom: 0.5em;
+        }
+        .averages-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1em;
+        }
+        .average-item strong {
+            font-size: 0.9em;
+            color: #6c757d;
+            display: block;
+        }
+        .average-item span {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-actions">
+        <h1>顧客データ一覧</h1>
+        <a href="/customers/new"><button class="btn-success">新規登録</button></a>
+    </div>
+
+    <form action="/" method="get" class="search-form">
+        <div class="form-group">
+            <label for="customerName">顧客名:</label>
+            <input type="text" id="customerName" name="customerName" placeholder="顧客名で検索" value="{{.customerName}}">
+        </div>
+        <div class="form-group">
+            <label for="startDate">対象年月 (開始):</label>
+            <input type="month" id="startDate" name="startDate" value="{{.startDate}}">
+        </div>
+        <div class="form-group">
+            <label for="endDate">対象年月 (終了):</label>
+            <input type="month" id="endDate" name="endDate" value="{{.endDate}}">
+        </div>
+        <button type="submit" class="btn-primary">検索</button>
+    </form>
+
+    <div class="averages-container">
+        <h3>表示データの平均値</h3>
+        <div class="averages-grid">
+            <div class="average-item">
+                <strong>月額費用(円)</strong>
+                <span>{{.averages.MonthlyFee | formatNumber}}</span>
+            </div>
+            <div class="average-item">
+                <strong>月の応募数</strong>
+                <span>{{.averages.MonthlyApplications | formatNumber}}</span>
+            </div>
+            <div class="average-item">
+                <strong>月の登録数</strong>
+                <span>{{.averages.MonthlyRegistrations | formatNumber}}</span>
+            </div>
+            <div class="average-item">
+                <strong>月の就業数</strong>
+                <span>{{.averages.MonthlyPlacements | formatNumber}}</span>
+            </div>
+            <div class="average-item">
+                <strong>応募単価(円)</strong>
+                <span>{{.averages.ApplicationUnitPrice | formatNumber}}</span>
+            </div>
+            <div class="average-item">
+                <strong>登録単価(円)</strong>
+                <span>{{.averages.RegistrationUnitPrice | formatInteger}}</span>
+            </div>
+            <div class="average-item">
+                <strong>就業単価(円)</strong>
+                <span>{{.averages.PlacementUnitPrice | formatNumber}}</span>
+            </div>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>対象年月</th>
+                <th>顧客名</th>
+                <th>月額費用(円)</th>
+                <th>月の応募数</th>
+                <th>月の登録数</th>
+                <th>月の就業数</th>
+                <th>応募単価(円)</th>
+                <th>登録単価(円)</th>
+                <th>就業単価(円)</th>
+                <th>最終更新日時</th>
+                <th></th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .customers}}
+            <tr>
+                <td>{{.YearMonth.Format "2006-01"}}</td>
+                <td>{{.CustomerName}}</td>
+                <td>{{.MonthlyFee | formatNumber}}</td>
+                <td>{{.MonthlyApplications | formatNumber}}</td>
+                <td>{{.MonthlyRegistrations | formatNumber}}</td>
+                <td>{{.MonthlyPlacements | formatNumber}}</td>
+                <td>{{.ApplicationUnitPrice | formatNumber}}</td>
+                <td>{{.RegistrationUnitPrice | formatInteger}}</td>
+                <td>{{.PlacementUnitPrice | formatNumber}}</td>
+                <td>{{.UpdatedAt.Format "2006-01-02 15:04:05"}}</td>
+                <td><a href="/customers/edit/{{.ID}}"><button class="btn-warning btn-sm">編集</button></a></td>
+                <td>
+                    <form class="delete-form" action="/customers/delete/{{.ID}}" method="post" onsubmit="return confirm('本当にこのデータを削除しますか？');">
+                        <button type="submit" class="btn-danger btn-sm">削除</button>
+                    </form>
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+
+</body>
+</html>

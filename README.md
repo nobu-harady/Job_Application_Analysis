@@ -1,2 +1,8 @@
 # 応募効果分析
-Application Effect Analysis
+## 利用方法
+下記コマンドで実行。
+> go run main.go
+
+WEBブラウザで以下を打鍵して使用。
+
+> http://localhost:8080/

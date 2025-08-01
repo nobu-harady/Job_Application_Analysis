@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>顧客データ編集</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 2em; background-color: #f8f9fa; color: #343a40; }
+        h1 { color: #0056b3; }
+        form { margin-top: 2em; padding: 2em; border: 1px solid #ccc; border-radius: 8px; background-color: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 600px; margin-left: auto; margin-right: auto; }
+        .form-group { margin-bottom: 1em; }
+        label { display: block; margin-bottom: 0.5em; font-weight: bold; }
+        input[type="text"], input[type="number"], input[type="month"] { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ced4da; border-radius: 4px; }
+        button { padding: 12px 20px; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        .btn-primary { background-color: #007bff; }
+        .btn-primary:hover { background-color: #0069d9; }
+        .btn-secondary { background-color: #6c757d; }
+        .btn-secondary:hover { background-color: #5a6268; }
+        .form-actions { margin-top: 2em; display: flex; justify-content: space-between; }
+    </style>
+</head>
+<body>
+    <h1>顧客データ編集</h1>
+
+    <form action="/customers/update/{{.customer.ID}}" method="post">
+        <div class="form-group">
+            <label for="customerName">顧客名:</label>
+            <input type="text" id="customerName" name="customerName" value="{{.customer.CustomerName}}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="yearMonth">対象年月:</label>
+            <input type="month" id="yearMonth" name="yearMonth" value="{{.customer.YearMonth.Format "2006-01"}}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="monthlyFee">月額費用(円):</label>
+            <input type="number" id="monthlyFee" name="monthlyFee" value="{{.customer.MonthlyFee}}" required>
+        </div>
+        <div class="form-group">
+            <label for="monthlyApplications">月の応募数:</label>
+            <input type="number" id="monthlyApplications" name="monthlyApplications" value="{{.customer.MonthlyApplications}}" required>
+        </div>
+        <div class="form-group">
+            <label for="monthlyRegistrations">月の登録数:</label>
+            <input type="number" id="monthlyRegistrations" name="monthlyRegistrations" value="{{.customer.MonthlyRegistrations}}" required>
+        </div>
+        <div class="form-group">
+            <label for="monthlyPlacements">月の就業数:</label>
+            <input type="number" id="monthlyPlacements" name="monthlyPlacements" value="{{.customer.MonthlyPlacements}}" required>
+        </div>
+        <div class="form-actions">
+            <a href="/"><button type="button" class="btn-secondary">キャンセル</button></a>
+            <button type="submit" class="btn-primary">更新</button>
+        </div>
+    </form>
+</body>
+</html>
+
