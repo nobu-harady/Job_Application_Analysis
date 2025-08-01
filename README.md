@@ -9,3 +9,6 @@ WEBブラウザで以下を打鍵して使用。
 
 ## 構成
 ![](Job_Application_Analysis.drawio.svg)
+
+## サンプル画像
+![](sample_image.png)
