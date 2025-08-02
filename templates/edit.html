@@ -24,6 +24,10 @@
 
     <form action="/customers/update/{{.customer.ID}}" method="post">
         <div class="form-group">
+            <label for="recruitmentMethod">採用手法:</label>
+            <input type="text" id="recruitmentMethod" name="recruitmentMethod" value="{{.customer.RecruitmentMethod}}" required>
+        </div>
+        <div class="form-group">
             <label for="customerName">顧客名:</label>
             <input type="text" id="customerName" name="customerName" value="{{.customer.CustomerName}}" required>
         </div>
@@ -56,4 +60,3 @@
     </form>
 </body>
 </html>
-

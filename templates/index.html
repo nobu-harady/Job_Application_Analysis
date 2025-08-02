@@ -3,13 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <title>顧客管理システム</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 2em; background-color: #f8f9fa; color: #343a40; }
         h1, h2 { color: #0056b3; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 2em; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; }
-        th { background-color: #007bff; color: white; }
+        th { background-color: #007bff; color: white; position: relative; }
+        th a {
+            color: inherit;
+            text-decoration: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+        th a:hover { text-decoration: underline; }
         tr:nth-child(even) { background-color: #f2f2f2; }
         form { margin-top: 2em; padding: 2em; border: 1px solid #ccc; border-radius: 8px; background-color: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .form-group { margin-bottom: 1em; }
@@ -24,6 +34,21 @@
         .btn-warning:hover { background-color: #e0a800; }
         .btn-danger { background-color: #dc3545; }
         .btn-danger:hover { background-color: #c82333; }
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .btn-secondary {
+            display: inline-block;
+            padding: 12px 20px;
+            color: white;
+            background-color: #6c757d;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 16px;
+        }
+        .btn-secondary:hover { background-color: #5a6268; }
         .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1em; }
         .search-form { display: flex; gap: 10px; align-items: center; }
         .delete-form {
@@ -66,6 +91,10 @@
 
     <form action="/" method="get" class="search-form">
         <div class="form-group">
+            <label for="recruitmentMethod">採用手法:</label>
+            <input type="text" id="recruitmentMethod" name="recruitmentMethod" placeholder="採用手法で検索" value="{{.recruitmentMethod}}">
+        </div>
+        <div class="form-group">
             <label for="customerName">顧客名:</label>
             <input type="text" id="customerName" name="customerName" placeholder="顧客名で検索" value="{{.customerName}}">
         </div>
@@ -78,7 +107,25 @@
             <input type="month" id="endDate" name="endDate" value="{{.endDate}}">
         </div>
         <button type="submit" class="btn-primary">検索</button>
+        <a href="/" class="btn-secondary" role="button">リセット</a>
     </form>
+
+    <div class="chart-container">
+        <div class="chart-controls">
+            <label for="metricSelector">グラフ表示指標:</label>
+            <select id="metricSelector" class="form-control">
+                <option value="monthly_applications" data-label="月の応募数">月の応募数</option>
+                <option value="monthly_registrations" data-label="月の登録数">月の登録数</option>
+                <option value="monthly_placements" data-label="月の就業数">月の就業数</option>
+                <option value="application_unit_price" data-label="応募単価(円)">応募単価(円)</option>
+                <option value="registration_unit_price" data-label="登録単価(円)">登録単価(円)</option>
+                <option value="placement_unit_price" data-label="就業単価(円)">就業単価(円)</option>
+            </select>
+        </div>
+        <div style="position: relative; height:40vh;">
+            <canvas id="metricsChart"></canvas>
+        </div>
+    </div>
 
     <div class="averages-container">
         <h3>表示データの平均値</h3>
@@ -117,16 +164,73 @@
     <table>
         <thead>
             <tr>
-                <th>対象年月</th>
-                <th>顧客名</th>
-                <th>月額費用(円)</th>
-                <th>月の応募数</th>
-                <th>月の登録数</th>
-                <th>月の就業数</th>
-                <th>応募単価(円)</th>
-                <th>登録単価(円)</th>
-                <th>就業単価(円)</th>
-                <th>最終更新日時</th>
+                {{$currentParams := printf "recruitmentMethod=%s&customerName=%s&startDate=%s&endDate=%s" .recruitmentMethod .customerName .startDate .endDate}}
+                <th>
+                    <a href="/?sort=year_month&order={{if and (eq .sortKey "year_month") (eq .order "asc")}}desc{{else}}asc{{end}}&{{$currentParams}}">
+                        <span>対象年月</span>
+                        <span>{{if eq .sortKey "year_month"}}{{if eq .order "asc"}}▲{{else}}▼{{end}}{{end}}</span>
+                    </a>
+                </th>
+                <th>
+                    <a href="/?sort=recruitment_method&order={{if and (eq .sortKey "recruitment_method") (eq .order "asc")}}desc{{else}}asc{{end}}&{{$currentParams}}">
+                        <span>採用手法</span>
+                        <span>{{if eq .sortKey "recruitment_method"}}{{if eq .order "asc"}}▲{{else}}▼{{end}}{{end}}</span>
+                    </a>
+                </th>
+                <th>
+                    <a href="/?sort=customer_name&order={{if and (eq .sortKey "customer_name") (eq .order "asc")}}desc{{else}}asc{{end}}&{{$currentParams}}">
+                        <span>顧客名</span>
+                        <span>{{if eq .sortKey "customer_name"}}{{if eq .order "asc"}}▲{{else}}▼{{end}}{{end}}</span>
+                    </a>
+                </th>
+                <th>
+                    <a href="/?sort=monthly_fee&order={{if and (eq .sortKey "monthly_fee") (eq .order "asc")}}desc{{else}}asc{{end}}&{{$currentParams}}">
+                        <span>月額費用(円)</span>
+                        <span>{{if eq .sortKey "monthly_fee"}}{{if eq .order "asc"}}▲{{else}}▼{{end}}{{end}}</span>
+                    </a>
+                </th>
+                <th>
+                    <a href="/?sort=monthly_applications&order={{if and (eq .sortKey "monthly_applications") (eq .order "asc")}}desc{{else}}asc{{end}}&{{$currentParams}}">
+                        <span>月の応募数</span>
+                        <span>{{if eq .sortKey "monthly_applications"}}{{if eq .order "asc"}}▲{{else}}▼{{end}}{{end}}</span>
+                    </a>
+                </th>
+                <th>
+                    <a href="/?sort=monthly_registrations&order={{if and (eq .sortKey "monthly_registrations") (eq .order "asc")}}desc{{else}}asc{{end}}&{{$currentParams}}">
+                        <span>月の登録数</span>
+                        <span>{{if eq .sortKey "monthly_registrations"}}{{if eq .order "asc"}}▲{{else}}▼{{end}}{{end}}</span>
+                    </a>
+                </th>
+                <th>
+                    <a href="/?sort=monthly_placements&order={{if and (eq .sortKey "monthly_placements") (eq .order "asc")}}desc{{else}}asc{{end}}&{{$currentParams}}">
+                        <span>月の就業数</span>
+                        <span>{{if eq .sortKey "monthly_placements"}}{{if eq .order "asc"}}▲{{else}}▼{{end}}{{end}}</span>
+                    </a>
+                </th>
+                <th>
+                    <a href="/?sort=application_unit_price&order={{if and (eq .sortKey "application_unit_price") (eq .order "asc")}}desc{{else}}asc{{end}}&{{$currentParams}}">
+                        <span>応募単価(円)</span>
+                        <span>{{if eq .sortKey "application_unit_price"}}{{if eq .order "asc"}}▲{{else}}▼{{end}}{{end}}</span>
+                    </a>
+                </th>
+                <th>
+                    <a href="/?sort=registration_unit_price&order={{if and (eq .sortKey "registration_unit_price") (eq .order "asc")}}desc{{else}}asc{{end}}&{{$currentParams}}">
+                        <span>登録単価(円)</span>
+                        <span>{{if eq .sortKey "registration_unit_price"}}{{if eq .order "asc"}}▲{{else}}▼{{end}}{{end}}</span>
+                    </a>
+                </th>
+                <th>
+                    <a href="/?sort=placement_unit_price&order={{if and (eq .sortKey "placement_unit_price") (eq .order "asc")}}desc{{else}}asc{{end}}&{{$currentParams}}">
+                        <span>就業単価(円)</span>
+                        <span>{{if eq .sortKey "placement_unit_price"}}{{if eq .order "asc"}}▲{{else}}▼{{end}}{{end}}</span>
+                    </a>
+                </th>
+                <th>
+                    <a href="/?sort=updated_at&order={{if and (eq .sortKey "updated_at") (eq .order "asc")}}desc{{else}}asc{{end}}&{{$currentParams}}">
+                        <span>最終更新日時</span>
+                        <span>{{if eq .sortKey "updated_at"}}{{if eq .order "asc"}}▲{{else}}▼{{end}}{{end}}</span>
+                    </a>
+                </th>
                 <th></th>
                 <th></th>
             </tr>
@@ -135,6 +239,7 @@
             {{range .customers}}
             <tr>
                 <td>{{.YearMonth.Format "2006-01"}}</td>
+                <td>{{.RecruitmentMethod}}</td>
                 <td>{{.CustomerName}}</td>
                 <td>{{.MonthlyFee | formatNumber}}</td>
                 <td>{{.MonthlyApplications | formatNumber}}</td>
@@ -155,5 +260,82 @@
         </tbody>
     </table>
 
+    <script>
+        // Goテンプレートから渡されたJSONデータをパース
+        const chartData = {{.chartData}};
+
+        // グラフ描画のコンテキストを取得
+        const ctx = document.getElementById('metricsChart');
+        const metricSelector = document.getElementById('metricSelector');
+
+        let myChart; // チャートのインスタンスを保持する変数
+
+        // グラフの各線に適用する色の配列
+        const chartColors = [
+            { border: 'rgba(255, 99, 132, 1)', background: 'rgba(255, 99, 132, 0.2)' },
+            { border: 'rgba(54, 162, 235, 1)', background: 'rgba(54, 162, 235, 0.2)' },
+            { border: 'rgba(255, 206, 86, 1)', background: 'rgba(255, 206, 86, 0.2)' },
+            { border: 'rgba(75, 192, 192, 1)', background: 'rgba(75, 192, 192, 0.2)' },
+            { border: 'rgba(153, 102, 255, 1)', background: 'rgba(153, 102, 255, 0.2)' },
+            { border: 'rgba(255, 159, 64, 1)', background: 'rgba(255, 159, 64, 0.2)' },
+            { border: 'rgba(46, 204, 113, 1)', background: 'rgba(46, 204, 113, 0.2)' },
+            { border: 'rgba(52, 73, 94, 1)', background: 'rgba(52, 73, 94, 0.2)' }
+        ];
+
+        // グラフを更新または作成する関数
+        function renderChart() {
+            if (!ctx || !chartData || !chartData.datasets || chartData.datasets.length === 0) return;
+
+            const selectedMetric = metricSelector.value;
+
+            // 既存のチャートがあれば破棄する
+            if (myChart) {
+                myChart.destroy();
+            }
+
+            // Chart.js用のデータセットを生成
+            const datasets = chartData.datasets.map((dataset, index) => {
+                const color = chartColors[index % chartColors.length];
+                return {
+                    label: dataset.label, // 例: "リクナビ - (株)A"
+                    data: dataset[selectedMetric], // 選択された指標のデータ
+                    borderColor: color.border,
+                    backgroundColor: color.background, // fill: true の場合に使用
+                    fill: false, // 複数の線がある場合、塗りつぶさない方が見やすい
+                    tension: 0.1
+                };
+            });
+
+            // Chart.jsでグラフを描画
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartData.labels, // X軸
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // セレクターが変更されたらグラフを再描画
+        metricSelector.addEventListener('change', renderChart);
+
+        // 初期表示
+        if (chartData && chartData.labels && chartData.labels.length > 0) {
+            renderChart();
+        } else {
+            // データがない場合の処理
+            const container = document.querySelector('.chart-container');
+            container.innerHTML = '<h3>グラフ</h3><p>表示するデータがありません。</p>';
+        }
+    </script>
 </body>
 </html>
